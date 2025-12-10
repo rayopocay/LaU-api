@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -64,6 +65,117 @@ class AuthController extends Controller
             ],
             'message' => 'Login Exitoso'
         ]);
+    }
+
+    /**
+     * Login/Registro con Redes Sociales (Google/Microsoft)
+     */
+    public function socialLogin(Request $request)
+    {
+        $request->validate([
+            'provider' => 'required|in:google,microsoft',
+            'token' => 'required|string'
+        ]);
+
+        $provider = $request->provider;
+        $token = $request->token;
+        $socialUser = null;
+
+        try {
+            // 1. VALIDAR EL TOKEN CON EL PROVEEDOR
+            if ($provider === 'google') {
+                $response = Http::withToken($token)->get('https://www.googleapis.com/oauth2/v3/userinfo');
+
+                if ($response->failed()) {
+                    return response()->json(['success' => false, 'message' => 'Token de Google inválido'], 401);
+                }
+
+                $data = $response->json();
+                $socialUser = (object)[
+                    'email' => $data['email'],
+                    'name' => $data['name'],
+                    'avatar' => $data['picture'] ?? null
+                ];
+            } elseif ($provider === 'microsoft') {
+                $response = Http::withToken($token)->get('https://graph.microsoft.com/v1.0/me');
+
+                if ($response->failed()) {
+                    // --- CAMBIO PARA VER EL ERROR REAL ---
+                    return response()->json([
+                        'success' => false,
+                        // Esto imprimirá el error exacto que da Microsoft (ej: "Invalid Audience", "Expired", etc)
+                        'message' => 'Error Microsoft: ' . $response->body()
+                    ], 401);
+                }
+
+                $data = $response->json();
+                $socialUser = (object)[
+                    'email' => $data['mail'] ?? $data['userPrincipalName'], // Microsoft a veces usa uno u otro
+                    'name' => $data['displayName'],
+                    'avatar' => null // Obtener avatar de Microsoft requiere otra llamada, lo dejamos null por ahora
+                ];
+            }
+
+            // 2. BUSCAR O CREAR USUARIO
+            $user = User::where('email', $socialUser->email)->first();
+
+            if (!$user) {
+                // --- REGISTRO AUTOMÁTICO ---
+
+                // Generar un username único basado en el nombre
+                $baseUsername = Str::slug($socialUser->name);
+                $username = $baseUsername . rand(100, 999);
+                while (User::where('username', $username)->exists()) {
+                    $username = $baseUsername . rand(1000, 9999);
+                }
+
+                /* * NOTA IMPORTANTE: 
+                 * Tu base de datos requiere universidad_id y carrera_id.
+                 * Como Google no nos da eso, tenemos dos opciones:
+                 * 1. Dejarlo null (si tu BD lo permite)
+                 * 2. Asignar un valor por defecto (ej: ID 1)
+                 * * Aquí intentaremos crearlo. Si tu BD no permite nulos en universidad_id,
+                 * esto fallará y tendrás que hacer esos campos 'nullable' en una migración.
+                 */
+
+                $user = User::create([
+                    'name' => $socialUser->name,
+                    'email' => $socialUser->email,
+                    'username' => $username,
+                    'password' => Hash::make(Str::random(24)), // Contraseña aleatoria segura
+                    'universidad_id' => 1, // SE PONE 1 PARA EJEMPLO, porque los campos son obligatorios
+                    'carrera_id' => 1,
+                    // Si puedes descargar la imagen y guardarla:
+                    // 'imagen' => ... (lógica compleja de imagen omitida para simplificar)
+                ]);
+            }
+
+            // 3. GENERAR TOKEN DE SESIÓN (LOGIN)
+            $token = $user->createToken('mobile-app')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'username' => $user->username,
+                        'email' => $user->email,
+                        'imagen_url' => $user->imagen_url, // Usando el accessor del modelo
+                        'universidad_id' => $user->universidad_id,
+                        'carrera_id' => $user->carrera_id
+                    ],
+                    'token' => $token,
+                    'is_new_user' => $user->wasRecentlyCreated // Bandera útil para el frontend
+                ],
+                'message' => 'Login con ' . ucfirst($provider) . ' exitoso'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en el servidor: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -188,127 +300,124 @@ class AuthController extends Controller
         ]);
     }
     public function edit(Request $request)
-{
-    try {
-        // Validación de campos
-        $request->validate([
-            'id' => 'required',
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            'profession' => 'nullable|string|max:255',
-            'univerdidad_id' => 'nullable|exists:universidades,id',
-            'carrera_id' => 'nullable|exists:carreras,id',
-            'gender' => 'nullable',
-            'imagen' => 'nullable|image|mimes:jpeg,png,jpg|max:20480' // Validar imagen de perfil
+    {
+        try {
+            // Validación de campos
+            $request->validate([
+                'id' => 'required',
+                'name' => 'required|string|max:255',
+                'username' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255',
+                'profession' => 'nullable|string|max:255',
+                'univerdidad_id' => 'nullable|exists:universidades,id',
+                'carrera_id' => 'nullable|exists:carreras,id',
+                'gender' => 'nullable',
+                'imagen' => 'nullable|image|mimes:jpeg,png,jpg|max:20480' // Validar imagen de perfil
 
-        ]);
+            ]);
 
-        $user = User::find($request->id);
-        if (!$user) {
-            throw new Exception('Usuario no encontrado');
-        }
-        $username = User::where('username', $request->username)->first();
-        if ($username && $username->id != $user->id) {
+            $user = User::find($request->id);
+            if (!$user) {
+                throw new Exception('Usuario no encontrado');
+            }
+            $username = User::where('username', $request->username)->first();
+            if ($username && $username->id != $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El username ya está en uso por otro usuario'
+                ], 422);
+            }
+
+            // Actualizar los campos de texto
+            $user->name = $request->name;
+            $user->username = $request->username;
+            $user->email = $request->email;
+            if ($request->has('profession')) {
+                $user->profession = $request->profession;
+            }
+            if ($request->has('universidad_id')) {
+                $user->universidad_id = $request->universidad_id;
+            }
+            if ($request->has('carrera_id')) {
+                $user->carrera_id = $request->carrera_id;
+            }
+            if ($request->has('gender')) {
+                $user->gender = $request->gender;
+            }
+
+            // Procesar imagen de perfil si se envió una nueva
+            if ($request->hasFile('imagen')) {
+                $imagen = $request->file('imagen');
+                $nombreImagen = Str::uuid() . ".jpg";
+
+                $manager = new ImageManager(new Driver());
+
+                try {
+                    // Leer la imagen
+                    $imagenServidor = $manager->read($imagen);
+
+                    // Obtener dimensiones originales
+                    $width = $imagenServidor->width();
+                    $height = $imagenServidor->height();
+
+                    // Tamaño objetivo para perfiles
+                    $targetSize = 400;
+
+                    // Mantener proporciones originales
+                    $scale = min($targetSize / $width, $targetSize / $height);
+                    $newWidth = (int)($width * $scale);
+                    $newHeight = (int)($height * $scale);
+
+                    // Redimensionar manteniendo proporciones
+                    $imagenServidor->scale($newWidth, $newHeight);
+
+                    // Guardar con calidad alta para perfiles
+                    $imagenPath = public_path('perfiles') . '/' . $nombreImagen;
+                    $imagenServidor->save($imagenPath, 90);
+
+                    // Eliminar imagen antigua si existe
+                    if ($user->imagen) {
+                        $oldImagePath = public_path('perfiles/' . $user->imagen);
+                        if (file_exists($oldImagePath)) {
+                            unlink($oldImagePath);
+                        }
+                    }
+
+                    // Actualizar el campo imagen
+                    $user->imagen = $nombreImagen;
+                } catch (\Exception $e) {
+                    // Si falla Intervention Image, usar método tradicional
+                    $imagen->move(public_path('perfiles'), $nombreImagen);
+
+                    // Eliminar imagen antigua si existe
+                    if ($user->imagen) {
+                        $oldImagePath = public_path('perfiles/' . $user->imagen);
+                        if (file_exists($oldImagePath)) {
+                            unlink($oldImagePath);
+                        }
+                    }
+
+                    $user->imagen = $nombreImagen;
+                }
+            }
+
+            // Guardar cambios en la base de datos
+            $user->save();
+
+            // Agregar URL completa de la imagen de perfil
+            $user->imagen_url = $user->imagen ? asset('perfiles/' . $user->imagen) : asset('img/usuario.svg');
+
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+                'message' => 'Usuario actualizado exitosamente'
+            ], 200);
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'El username ya está en uso por otro usuario'
+                'message' => 'Error de validación',
+                'errors' => $e->getMessage()
             ], 422);
         }
-
-        // Actualizar los campos de texto
-        $user->name = $request->name;
-        $user->username = $request->username;
-        $user->email = $request->email;
-        if ($request->has('profession')) {
-            $user->profession = $request->profession;
-        }
-        if ($request->has('universidad_id')) {
-            $user->universidad_id = $request->universidad_id;
-        }
-        if ($request->has('carrera_id')) {
-            $user->carrera_id = $request->carrera_id;
-        }
-        if ($request->has('gender')) {
-            $user->gender = $request->gender;
-        }
-
-        // Procesar imagen de perfil si se envió una nueva
-        if ($request->hasFile('imagen')) {
-            $imagen = $request->file('imagen');
-            $nombreImagen = Str::uuid() . ".jpg";
-
-            $manager = new ImageManager(new Driver());
-
-            try {
-                // Leer la imagen
-                $imagenServidor = $manager->read($imagen);
-
-                // Obtener dimensiones originales
-                $width = $imagenServidor->width();
-                $height = $imagenServidor->height();
-
-                // Tamaño objetivo para perfiles
-                $targetSize = 400;
-
-                // Mantener proporciones originales
-                $scale = min($targetSize / $width, $targetSize / $height);
-                $newWidth = (int)($width * $scale);
-                $newHeight = (int)($height * $scale);
-
-                // Redimensionar manteniendo proporciones
-                $imagenServidor->scale($newWidth, $newHeight);
-
-                // Guardar con calidad alta para perfiles
-                $imagenPath = public_path('perfiles') . '/' . $nombreImagen;
-                $imagenServidor->save($imagenPath, 90);
-
-                // Eliminar imagen antigua si existe
-                if ($user->imagen) {
-                    $oldImagePath = public_path('perfiles/' . $user->imagen);
-                    if (file_exists($oldImagePath)) {
-                        unlink($oldImagePath);
-                    }
-                }
-
-                // Actualizar el campo imagen
-                $user->imagen = $nombreImagen;
-
-            } catch (\Exception $e) {
-                // Si falla Intervention Image, usar método tradicional
-                $imagen->move(public_path('perfiles'), $nombreImagen);
-                
-                // Eliminar imagen antigua si existe
-                if ($user->imagen) {
-                    $oldImagePath = public_path('perfiles/' . $user->imagen);
-                    if (file_exists($oldImagePath)) {
-                        unlink($oldImagePath);
-                    }
-                }
-                
-                $user->imagen = $nombreImagen;
-            }
-        }
-
-        // Guardar cambios en la base de datos
-        $user->save();
-
-        // Agregar URL completa de la imagen de perfil
-        $user->imagen_url = $user->imagen ? asset('perfiles/' . $user->imagen) : asset('img/usuario.svg');
-
-        return response()->json([
-            'success' => true,
-            'data' => $user,
-            'message' => 'Usuario actualizado exitosamente'
-        ], 200);
-
-    } catch (Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Error de validación',
-            'errors' => $e->getMessage()
-        ], 422);
     }
-}
-
 }
