@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\PomodoroController;
 // Rutas públicas (no requieren autenticación)
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/social-login', [AuthController::class, 'socialLogin']);
 
 // Universidades y Carreras (públicas para el formulario de registro)
 Route::get('/universidades', [UniversidadController::class, 'index']);
