@@ -66,7 +66,30 @@ class SUController extends Controller
         return view('su.carreras');
     }
 
+    public function userperfil(User $user)
+    {
+        $authUser = Auth::user();
+        $users = \App\Models\User::with(['universidad', 'carrera'])
+                ->withCount(['posts', 'followers'])
+                ->latest()
+                ->get();
+        
+        return view('su.usuarios', [
+            'users' => $users,
+            'authUser' => $authUser,
+        ]);
+    }
 
+    public function buscarUsuarios(Request $request)
+    {
+        $query = $request->get('buscar');
+        $users = User::where('name', 'like', "%{$query}%")
+                     ->orWhere('username', 'like', "%{$query}%")
+                     ->get(); // O usa paginate() si prefieres
+
+        // IMPORTANTE: Retorna el partial que creamos en el paso 2
+        return view('components.listar-perfiles-su', compact('users'))->render();
+    }
 
     public function store(Request $request)
     {
@@ -151,7 +174,9 @@ class SUController extends Controller
 
     public function ads()
     {
-        return view('su.anuncio');
+        $banners = Banner::latest()->get();
+        $activeCount = $banners->where('is_active', true)->count();
+        return view('su.anuncio', compact('banners', 'activeCount'));
     }
 
     public function create(Request $request)
@@ -193,6 +218,14 @@ class SUController extends Controller
         ]);
 
         return redirect()->route('su.ads')->with('success', 'Banner creado correctamente');
+    }
+
+    public function delete($id) 
+    {
+        $banner = Banner::findOrFail($id); // O el modelo que uses
+        $banner->delete();
+
+        return back()->with('success', 'Banner eliminado');
     }
 
     public function insig()

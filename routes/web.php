@@ -307,11 +307,15 @@ Route::middleware(['auth:super'])
     ->prefix('us/su/lau')
     ->as('su.')
     ->group(function () {
+        Route::get('/buscar-usuarios', [SUController::class, 'buscarUsuarios'])->name('user.buscar');
+
         Route::get('/dashboard', [SUController::class, 'dashboard'])->name('dash');
 
         Route::get('/universidades', [SUController::class, 'universidad'])->name('uni');
 
         Route::get('/carreras', [SUController::class, 'carrera'])->name('uni.ca');
+
+        Route::get('/usuarios', [SUController::class, 'userperfil'])->name('usu');
 
         Route::get('/info/{user:username}', [SUController::class, 'info'])->name('info');
         Route::post('/info/{user:username}/insignia', [SUController::class, 'addInsignia'])->name('add.insig');
@@ -321,9 +325,9 @@ Route::middleware(['auth:super'])
         Route::get('/ads/create', [SUController::class, 'ads'])->name('ads');
         Route::post('/ads/create', [SUController::class, 'create'])->name('ads.create');
 
-        Route::get('/insig/create', [SUController::class, 'insig'])->name('insig');
+        Route::delete('/ads/{id}', [SUController::class, 'delete'])->name('ads.delete');
 
-        Route::get('/buscar-userus', [UserController::class, 'buscarUsuarios'])->name('user.buscar');
+        Route::get('/insig/create', [SUController::class, 'insig'])->name('insig');
     });
 
 
