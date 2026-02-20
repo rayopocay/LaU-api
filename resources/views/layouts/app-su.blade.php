@@ -41,6 +41,44 @@
 
 <body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
 
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+
+        <div class="toast-alert pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-green-500 rounded-xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-300 flex items-start p-4 animate-slide-in-right">
+            <div class="flex-shrink-0">
+                <div class="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="ml-3 w-0 flex-1 pt-0.5">
+                <p class="text-sm font-bold text-gray-900 dark:text-white">¡Éxito!</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">La operación se completó correctamente.</p>
+            </div>
+            <div class="ml-4 flex-shrink-0 flex">
+                <button onclick="closeToast(this.closest('.toast-alert'))" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="toast-alert pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-red-500 rounded-xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-300 flex items-start p-4 animate-slide-in-right">
+            <div class="flex-shrink-0">
+                <div class="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+            </div>
+            <div class="ml-3 w-0 flex-1 pt-0.5">
+                <p class="text-sm font-bold text-gray-900 dark:text-white">Error</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Hubo un problema al guardar los datos.</p>
+            </div>
+            <div class="ml-4 flex-shrink-0 flex">
+                <button onclick="closeToast(this.closest('.toast-alert'))" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
     <div class="flex h-screen overflow-hidden relative">
 
         <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-indigo-900 text-white flex flex-col shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-auto">
@@ -184,6 +222,57 @@
         if(openSidebarButton) openSidebarButton.addEventListener('click', openSidebar);
         if(sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
 
+    </script>
+
+    <style>
+        /* Animación de Entrada */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+            animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Animación de Salida (Nueva) */
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .animate-slide-out-right {
+            animation: slideOutRight 0.4s ease-in forwards;
+        }
+    </style>
+
+    <script>
+        // Función para cerrar una alerta específica
+        function closeToast(element) {
+            if (!element) return;
+            
+            // 1. Agregar clase de animación de salida
+            element.classList.remove('animate-slide-in-right'); // Quitamos la de entrada por si acaso
+            element.classList.add('animate-slide-out-right');   // Agregamos la de salida
+
+            // 2. Esperar a que termine la animación (400ms) y eliminar del HTML
+            setTimeout(() => {
+                if (element && element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            }, 400); 
+        }
+
+        // Inicialización Automática al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            // Seleccionamos todas las alertas presentes
+            const toasts = document.querySelectorAll('.toast-alert');
+
+            toasts.forEach(toast => {
+                // Configuramos el temporizador de 10 segundos (10000 ms) para cada una
+                setTimeout(() => {
+                    closeToast(toast);
+                }, 10000);
+            });
+        });
     </script>
 </body>
 </html>

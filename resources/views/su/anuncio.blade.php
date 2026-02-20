@@ -1,6 +1,9 @@
 @extends('layouts.app-su')
 
+@section('title', 'Banner')
+
 @section('view-contenido')
+
 <div class="flex-1 flex flex-col h-screen relative overflow-hidden bg-gray-50 dark:bg-gray-900">
     
     {{-- ==========================================
@@ -17,17 +20,25 @@
                     {{ $activeCount ?? 0 }} Activos
                 </span>
             </div>
-            <button onclick="openCreateMode()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5 flex items-center">
+            <button type="button" onclick="openCreateMode()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5 flex items-center">
                 <i class="fas fa-plus mr-2"></i> Nuevo Anuncio
             </button>
         </header>
 
         <div class="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-            @if (session('success'))
-                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" class="mb-6 px-4 py-3 text-green-700 bg-green-100 border border-green-400 rounded-lg flex items-center shadow-sm fade-in">
-                    <i class="fas fa-check-circle mr-2"></i> {{ session('success') }}
-                </div>
-            @endif
+
+            {{-- Viñetas / Filtros --}}
+            <div class="mb-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button type="button" onclick="filterBanners('all', this)" class="banner-filter-btn px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded-full whitespace-nowrap transition shadow-sm">
+                    Todos
+                </button>
+                <button type="button" onclick="filterBanners('active', this)" class="banner-filter-btn px-4 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-full whitespace-nowrap transition shadow-sm">
+                    Activos
+                </button>
+                <button type="button" onclick="filterBanners('draft', this)" class="banner-filter-btn px-4 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-full whitespace-nowrap transition shadow-sm">
+                    Borradores
+                </button>
+            </div>
 
             {{-- GRID DE BANNERS --}}
             <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 fade-in">
@@ -58,10 +69,10 @@
                                     <i class="{{ $style['icon'] }}"></i>
                                 </div>
                                 <div class="flex gap-1">
-                                    <button onclick='openEditMode(@json($banner))' class="text-gray-400 hover:text-indigo-600 p-1 transition" title="Editar">
+                                    <button type="button" onclick='openEditMode(@json($banner))' class="text-gray-400 hover:text-indigo-600 p-1 transition" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button onclick="confirmDelete('{{ route('su.ads.delete', $banner->id) }}')" class="text-gray-400 hover:text-red-500 p-1 transition" title="Eliminar">
+                                    <button type="button" onclick="confirmDelete('{{ route('su.ads.delete', $banner->id) }}')" class="text-gray-400 hover:text-red-500 p-1 transition" title="Eliminar">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -97,14 +108,14 @@
     <div id="view-create" class="flex-col h-full hidden view-transition">
         <header class="h-20 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-between px-4 md:px-8 shrink-0 z-20 border-b border-gray-100 dark:border-gray-700">
             <div class="flex items-center gap-4">
-                <button onclick="attemptGoBack()" class="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-white transition">
+                <button type="button" onclick="attemptGoBack()" class="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-white transition">
                     <i class="fas fa-arrow-left fa-lg"></i>
                 </button>
                 <h2 id="formTitle" class="text-xl font-bold text-gray-700 dark:text-white">Crear Nuevo Anuncio</h2>
             </div>
             <div class="flex gap-2 md:gap-3">
-                <button onclick="resetForm()" class="hidden md:block text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white px-4 py-2 text-sm font-medium">Limpiar</button>
-                <button onclick="submitForm(1)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 md:px-6 py-2 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5">
+                <button type="button" onclick="resetForm()" class="hidden md:block text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white px-4 py-2 text-sm font-medium">Limpiar</button>
+                <button type="button" onclick="submitForm(1)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 md:px-6 py-2 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5">
                     <i class="fas fa-paper-plane mr-2"></i> <span class="hidden md:inline">Publicar</span>
                 </button>
             </div>
@@ -113,39 +124,40 @@
         <div class="flex-1 flex overflow-hidden">
             {{-- Columna Izquierda: Formulario --}}
             <div class="w-full md:w-1/2 lg:w-5/12 overflow-y-auto p-6 md:p-10 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-10 custom-scrollbar">
-                <form id="announcementForm" action="{{ route('su.ads.create') }}" data-create-url="{{ route('su.ads.create') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+
+                <form id="announcementForm" action="{{ route('su.ads.create') }}" data-create-url="{{ route('su.ads.create') }}" data-update-url="{{ route('su.ads.update', 'REPLACE_ID') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
                     <div id="method-spoof"></div>
                     <input type="hidden" name="_method" id="methodInput" value="PUT" disabled>
-                    <input type="hidden" name="is_active" id="isActiveInput" value="1">
+                    <input type="hidden" name="is_active" id="isActiveInput" value="{{ old('is_active', 1) }}">
 
                     {{-- Tipos --}}
                     <div>
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Tipo de Aviso</label>
                         <div class="grid grid-cols-4 gap-2 md:gap-3">
                             <label class="cursor-pointer">
-                                <input type="radio" id="hasimgbt" name="type" value="feature" class="peer sr-only" checked onchange="updatePreview()">
+                                <input type="radio" id="hasimgbt" name="type" value="feature" class="peer sr-only" {{ old('type', 'feature') == 'feature' ? 'checked' : '' }} onchange="updatePreview()">
                                 <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 flex items-center justify-center text-gray-400 peer-checked:text-purple-500 transition-all">
                                     <i class="fa-solid fa-image"></i>
                                 </div>
                                 <span class="block text-center text-[10px] md:text-xs mt-1 text-gray-500">Feature</span>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="radio" name="type" value="update" class="peer sr-only" onchange="updatePreview()">
+                                <input type="radio" name="type" value="update" class="peer sr-only" {{ old('type') == 'update' ? 'checked' : '' }} onchange="updatePreview()">
                                 <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 flex items-center justify-center text-gray-400 peer-checked:text-green-500 transition-all">
                                     <i class="fas fa-sync-alt"></i>
                                 </div>
                                 <span class="block text-center text-[10px] md:text-xs mt-1 text-gray-500">Update</span>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="radio" name="type" value="warning" class="peer sr-only" onchange="updatePreview()">
+                                <input type="radio" name="type" value="warning" class="peer sr-only" {{ old('type') == 'warning' ? 'checked' : '' }} onchange="updatePreview()">
                                 <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 dark:peer-checked:bg-yellow-900/20 flex items-center justify-center text-gray-400 peer-checked:text-yellow-500 transition-all">
                                     <i class="fas fa-exclamation-triangle"></i>
                                 </div>
                                 <span class="block text-center text-[10px] md:text-xs mt-1 text-gray-500">Warning</span>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="radio" id="hasinfobt" name="type" value="info" class="peer sr-only" onchange="updatePreview()">
+                                <input type="radio" id="hasinfobt" name="type" value="info" class="peer sr-only" {{ old('type') == 'info' ? 'checked' : '' }} onchange="updatePreview()">
                                 <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 flex items-center justify-center text-gray-400 peer-checked:text-blue-500 transition-all">
                                     <i class="fas fa-info-circle"></i>
                                 </div>
@@ -157,18 +169,18 @@
                     {{-- Imagen (URL) --}}
                     <div id="buttonImg" class="transition-all duration-300">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Imagen (URL)</label>
-                        <input type="text" name="image_url" placeholder="https://ejemplo.com/imagen.png" oninput="updatePreview()" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                        <input type="text" name="image_url" value="{{ old('image_url') }}" placeholder="https://ejemplo.com/imagen.png" oninput="updatePreview()" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
                     </div>
 
                     {{-- Contenidos --}}
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Título</label>
-                            <input type="text" id="inputTitle" name="title" oninput="updatePreview()" placeholder="Ej. Nueva actualización" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Título *</label>
+                            <input type="text" id="inputTitle" name="title" value="{{ old('title') }}" oninput="updatePreview()" placeholder="Ej. Nueva actualización" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción</label>
-                            <textarea id="inputContent" name="content" oninput="updatePreview()" rows="3" placeholder="Detalles del anuncio..." class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción *</label>
+                            <textarea id="inputContent" name="content" oninput="updatePreview()" rows="3" required placeholder="Detalles del anuncio..." class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none">{{ old('content') }}</textarea>
                         </div>
                     </div>
 
@@ -180,32 +192,32 @@
                                 <p class="text-xs text-gray-500">Permite redirigir a los usuarios a un link.</p>
                             </div>
                             <div class="relative">
-                                <input type="checkbox" id="hasButton" class="sr-only peer" onchange="toggleButtonInput(); updatePreview();">
+                                <input type="checkbox" id="hasButton" class="sr-only peer" {{ old('action_url') ? 'checked' : '' }} onchange="toggleButtonInput(); updatePreview();">
                                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
                             </div>
                         </label>
                         
-                        <div id="buttonConfig" class="mt-4 space-y-4 hidden opacity-0 transition-all duration-300">
+                        <div id="buttonConfig" class="mt-4 space-y-4 {{ old('action_url') ? '' : 'hidden opacity-0' }} transition-all duration-300">
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Texto del botón</label>
-                                <input type="text" id="inputBtnText" name="action_text" value="Entendido" oninput="updatePreview()" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                <input type="text" id="inputBtnText" name="action_text" value="{{ old('action_text', 'Entendido') }}" oninput="updatePreview()" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Enlace (URL)</label>
-                                <input type="text" name="action_url" placeholder="https://..." class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                <input type="text" name="action_url" value="{{ old('action_url') }}" placeholder="https://..." class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
                             </div>
                         </div>
                     </div>
 
-                    {{-- Fechas --}}
+                    {{-- Fechas (Se hicieron obligatorias para que no falle el controller) --}}
                     <div class="pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Inicio</label>
-                            <input type="date" name="start_date" id="start_date" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Inicio *</label>
+                            <input type="date" name="start_date" id="start_date" required value="{{ old('start_date') }}" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Fin</label>
-                            <input type="date" name="end_date" id="end_date" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Fin *</label>
+                            <input type="date" name="end_date" id="end_date" required value="{{ old('end_date') }}" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
                         </div>
                     </div>
                 </form>
@@ -214,8 +226,8 @@
             {{-- Columna Derecha: Vista Previa en Vivo --}}
             <div class="hidden md:flex w-1/2 lg:w-7/12 preview-bg flex-col items-center justify-center p-8 relative">
                 <div class="absolute top-6 bg-white dark:bg-gray-800 p-1 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex">
-                    <button onclick="switchDevice('mobile')" id="btn-mobile" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-white"><i class="fas fa-mobile-alt mr-2"></i> Móvil</button>
-                    <button onclick="switchDevice('desktop')" id="btn-desktop" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"><i class="fas fa-desktop mr-2"></i> PC</button>
+                    <button type="button" onclick="switchDevice('mobile')" id="btn-mobile" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-white"><i class="fas fa-mobile-alt mr-2"></i> Móvil</button>
+                    <button type="button" onclick="switchDevice('desktop')" id="btn-desktop" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"><i class="fas fa-desktop mr-2"></i> PC</button>
                 </div>
 
                 {{-- Preview Móvil --}}
@@ -237,8 +249,8 @@
                                     <h2 id="title-mobile" class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">Título</h2>
                                     <div id="content-mobile" class="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">Texto...</div>
                                     <div id="actions-mobile" class="space-y-3">
-                                        <button id="btn-main-mobile" class="w-full py-3 px-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hidden">Entendido</button>
-                                        <button id="btn-default-mobile" class="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-200">Cerrar</button>
+                                        <button type="button" id="btn-main-mobile" class="w-full py-3 px-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hidden">Entendido</button>
+                                        <button type="button" id="btn-default-mobile" class="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-200">Cerrar</button>
                                     </div>
                                 </div>
                             </div>
@@ -263,8 +275,8 @@
                                     <h2 id="title-desktop" class="text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">Título</h2>
                                     <div id="content-desktop" class="text-gray-600 dark:text-gray-300 text-base mb-8 leading-relaxed">Texto...</div>
                                     <div id="actions-desktop" class="flex justify-center gap-3">
-                                        <button id="btn-default-desktop" class="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-200">Cerrar</button>
-                                        <button id="btn-main-desktop" class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hidden">Entendido</button>
+                                        <button type="button" id="btn-default-desktop" class="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-200">Cerrar</button>
+                                        <button type="button" id="btn-main-desktop" class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hidden">Entendido</button>
                                     </div>
                                 </div>
                             </div>
@@ -298,7 +310,7 @@
             <div class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
                 Esta interfaz no está diseñada para móviles. Para poder crear o editar anuncios y ver la vista previa, por favor ingresa desde un ordenador.
             </div>
-            <button onclick="document.getElementById('globalBanner').classList.add('hidden')" class="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition">
+            <button type="button" onclick="document.getElementById('globalBanner').classList.add('hidden')" class="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition">
                 Entendido
             </button>
         </div>
@@ -384,6 +396,39 @@
         'info':    { icon: 'info-circle', color: 'blue' }
     };
 
+    // --- MANEJO DE ERRORES AL CARGAR ---
+    // Si hay errores de validación de Laravel, forzamos abrir el panel de "Crear"
+    @if($errors->any())
+        document.addEventListener("DOMContentLoaded", function() {
+            toggleView('create');
+        });
+    @endif
+
+    // --- FILTROS DE BANNERS (VIÑETAS) ---
+    function filterBanners(status, btnElement) {
+        // 1. Cambiar estilo del botón activo
+        document.querySelectorAll('.banner-filter-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
+        });
+        btnElement.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
+        btnElement.classList.add('bg-indigo-600', 'text-white');
+
+        // 2. Filtrar las tarjetas (los divs padres para el grid)
+        const items = document.querySelectorAll('.banner-item');
+        items.forEach(item => {
+            if (status === 'all') {
+                item.style.display = 'flex'; 
+            } else {
+                if (item.dataset.status === status) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        });
+    }
+
     // --- MODALES DINÁMICOS ---
     function openModal(idName) {
         const modal = document.getElementById(`${idName}-modal`);
@@ -441,7 +486,10 @@
         form.reset();
         currentBannerId = banner.id;
         document.getElementById('formTitle').innerText = "Editar Anuncio";
-        form.action = `/us/su/lau/ads/update/${banner.id}`; // Asegúrate que esta ruta exista
+        
+        // Forma segura de construir la URL usando el Data Attribute
+        let updateUrl = form.dataset.updateUrl.replace('REPLACE_ID', banner.id);
+        form.action = updateUrl; 
         
         const methodInput = document.getElementById('methodInput');
         if (methodInput) methodInput.disabled = false; // Modo PUT
@@ -546,7 +594,8 @@
         const contentVal = inputContent.value || 'Aquí aparecerá la descripción de tu anuncio tal cual lo verán los usuarios.';
         const btnVal = inputBtnText.value || 'Entendido';
         
-        const selectedType = document.querySelector('input[name="type"]:checked').value;
+        const selectedRadio = document.querySelector('input[name="type"]:checked');
+        const selectedType = selectedRadio ? selectedRadio.value : 'info'; // Fallback a info
         const config = types[selectedType];
         
         let colorClasses = '';
@@ -566,15 +615,17 @@
         if(hasinfobt) {
             btdefadesk.classList.add('hidden');
             btdefamobi.classList.add('hidden');
-            hasButtonadd.checked = true;
+            if(hasButtonadd) {
+                hasButtonadd.checked = true;
+                hasButtonadd.disabled = true;
+            }
             toggleButtonInput();
-            hasButtonadd.disabled = true;
             toggleLabel.classList.remove('cursor-pointer');
             toggleLabel.classList.add('cursor-not-allowed');
         } else {
             btdefadesk.classList.remove('hidden');
             btdefamobi.classList.remove('hidden');
-            hasButtonadd.disabled = false;
+            if(hasButtonadd) hasButtonadd.disabled = false;
             toggleLabel.classList.add('cursor-pointer');
             toggleLabel.classList.remove('cursor-not-allowed');
         }
