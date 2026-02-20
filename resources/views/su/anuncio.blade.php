@@ -1,6 +1,6 @@
 @extends('layouts.app-su')
 
-@section('title', 'Banner')
+@section('title', 'Anuncios / Banner')
 
 @section('view-contenido')
 
@@ -10,38 +10,53 @@
          VISTA 1: LISTA DE ANUNCIOS (INDEX)
          ========================================== --}}
     <div id="view-index" class="flex flex-col h-full view-transition">
+        
         <header class="h-20 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-between px-8 shrink-0">
             <div class="flex items-center gap-4">
-                <button id="open-sidebar-button" class="text-gray-500 dark:text-gray-200 focus:outline-none lg:hidden mr-4">
-                    <i class="fas fa-bars fa-2x"></i>
-                </button>
+                <button id="open-sidebar-button" class="text-gray-500 dark:text-gray-200 focus:outline-none lg:hidden mr-4"><i class="fas fa-bars fa-2x"></i></button>
                 <h2 class="text-2xl font-bold text-gray-700 dark:text-white">Gestión de Anuncios</h2>
-                <span class="hidden md:block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">
-                    {{ $activeCount ?? 0 }} Activos
-                </span>
+                <span class="hidden md:block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">{{ $activeCount }} Activos</span>
             </div>
-            <button type="button" onclick="openCreateMode()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5 flex items-center">
+            <button onclick="toggleView('create')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5 flex items-center">
                 <i class="fas fa-plus mr-2"></i> Nuevo Anuncio
             </button>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+        <main class="flex-1 overflow-y-auto p-8 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
+            
+            {{-- Viñetas con contadores --}}
+            <div class="flex gap-2 mb-6">
+                <button onclick="filterBanners('all')" id="btn-filter-all" 
+                    class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium transition bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-transparent">
+                    Todos {{ $banners->count() }}
+                </button>
 
-            {{-- Viñetas / Filtros --}}
-            <div class="mb-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button type="button" onclick="filterBanners('all', this)" class="banner-filter-btn px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded-full whitespace-nowrap transition shadow-sm">
-                    Todos
+                <button onclick="filterBanners('active')" id="btn-filter-active" 
+                    class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Activos {{ $activeCount }}
                 </button>
-                <button type="button" onclick="filterBanners('active', this)" class="banner-filter-btn px-4 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-full whitespace-nowrap transition shadow-sm">
-                    Activos
-                </button>
-                <button type="button" onclick="filterBanners('draft', this)" class="banner-filter-btn px-4 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-full whitespace-nowrap transition shadow-sm">
-                    Borradores
+
+                <button onclick="filterBanners('draft')" id="btn-filter-draft" 
+                    class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Borradores {{ $banners->count() - $activeCount }}
                 </button>
             </div>
 
-            {{-- GRID DE BANNERS --}}
-            <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 fade-in">
+            <div class="flex items-center gap-4 mb-6 block md:hidden">
+                <span class=" bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">{{ $activeCount }} Activos</span>
+            </div>
+
+            {{-- CONTENEDOR DE CARGA --}}
+            <div id="loading-body" class="flex-1 px-6 md:px-10 pb-10 flex flex-col items-center justify-center min-h-[400px]">
+                <div class="text-center text-gray-500">
+                    <i class="fa-solid fa-inbox fa-3x mb-4 text-gray-300 animate-pulse"></i>
+                    <p class="text-lg font-medium">Cargando Banners...</p>
+                </div>
+            </div>
+
+            {{-- GRILLA DE BANNERS --}}
+            <div id="banners-grid" class="hidden grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 fade-in">
+                
                 @forelse($banners as $banner)
                     @php
                         switch ($banner->type) {
@@ -62,12 +77,15 @@
                     @endphp
 
                     <div class="banner-item bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition group h-full flex flex-col" data-status="{{ $banner->is_active ? 'active' : 'draft' }}">
+                        
                         <div class="h-2 {{ $style['border'] }}"></div>
+                        
                         <div class="p-5 flex-1 flex flex-col">
                             <div class="flex justify-between items-start mb-3">
                                 <div class="{{ $style['icon_bg'] }} {{ $style['icon_text'] }} h-10 w-10 rounded-full flex items-center justify-center">
                                     <i class="{{ $style['icon'] }}"></i>
                                 </div>
+                                
                                 <div class="flex gap-1">
                                     <button type="button" onclick='openEditMode(@json($banner))' class="text-gray-400 hover:text-indigo-600 p-1 transition" title="Editar">
                                         <i class="fas fa-edit"></i>
@@ -77,160 +95,172 @@
                                     </button>
                                 </div>
                             </div>
-                            <h3 class="font-bold text-gray-800 dark:text-white mb-1 truncate" title="{{ $banner->title }}">{{ $banner->title }}</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-1">{{ $banner->content }}</p>
+
+                            <h3 class="font-bold text-gray-800 dark:text-white mb-1 truncate" title="{{ $banner->title }}">
+                                {{ $banner->title }}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-1">
+                                {{ $banner->content }}
+                            </p>
+
                             <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-xs">
                                 @if($banner->is_active)
-                                    <span class="text-green-500 font-bold flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span> Activo</span>
+                                    <span class="text-green-500 font-bold flex items-center">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span> Activo
+                                    </span>
                                 @else
-                                    <span class="text-gray-400 font-bold flex items-center"><span class="w-2 h-2 bg-gray-400 rounded-full mr-1"></span> Borrador</span>
+                                    <span class="text-gray-400 font-bold flex items-center">
+                                        <span class="w-2 h-2 bg-gray-400 rounded-full mr-1"></span> Borrador
+                                    </span>
                                 @endif
-                                <span class="text-gray-400" title="{{ $banner->created_at }}">{{ $banner->created_at->diffForHumans() }}</span>
+                                <span class="text-gray-400" title="{{ $banner->created_at }}">
+                                    {{ $banner->created_at->diffForHumans() }}
+                                </span>
                             </div>
                         </div>
                     </div>
+
                 @empty
-                    <div class="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                        <div class="h-24 w-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                            <i class="fas fa-bullhorn text-4xl text-gray-400"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">No hay anuncios</h3>
-                        <p class="text-gray-500 dark:text-gray-400 max-w-sm">Aún no has creado ningún anuncio. Crea el primero para informar a tus usuarios.</p>
+                    <div class="col-span-full flex flex-col items-center justify-center p-10 text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+                        <i class="fas fa-folder-open fa-3x mb-4 opacity-50"></i>
+                        <p>No hay banners creados aún.</p>
                     </div>
                 @endforelse
+
+                <div id="no-filter-results" class="hidden col-span-full text-center py-10 text-gray-500">
+                    <p>No se encontraron banners con este estado.</p>
+                </div>
+
             </div>
-        </div>
+        </main>
     </div>
+
 
     {{-- ==========================================
          VISTA 2: CREAR / EDITAR ANUNCIO (CREATE)
          ========================================== --}}
     <div id="view-create" class="flex-col h-full hidden view-transition">
-        <header class="h-20 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-between px-4 md:px-8 shrink-0 z-20 border-b border-gray-100 dark:border-gray-700">
+        
+        <header class="h-20 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-between px-8 shrink-0 z-20 border-b border-gray-100 dark:border-gray-700">
             <div class="flex items-center gap-4">
                 <button type="button" onclick="attemptGoBack()" class="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-white transition">
                     <i class="fas fa-arrow-left fa-lg"></i>
                 </button>
                 <h2 id="formTitle" class="text-xl font-bold text-gray-700 dark:text-white">Crear Nuevo Anuncio</h2>
             </div>
-            <div class="flex gap-2 md:gap-3">
-                <button type="button" onclick="resetForm()" class="hidden md:block text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white px-4 py-2 text-sm font-medium">Limpiar</button>
-                <button type="button" onclick="submitForm(1)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 md:px-6 py-2 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5">
+            <div class="flex gap-3">
+                <button type="button" onclick="resetForm()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white px-4 py-2 text-sm font-medium hidden md:block">Limpiar</button>
+                <button type="button" onclick="submitForm(1)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5 flex items-center">
                     <i class="fas fa-paper-plane mr-2"></i> <span class="hidden md:inline">Publicar</span>
                 </button>
             </div>
         </header>
 
         <div class="flex-1 flex overflow-hidden">
+            
             {{-- Columna Izquierda: Formulario --}}
             <div class="w-full md:w-1/2 lg:w-5/12 overflow-y-auto p-6 md:p-10 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-10 custom-scrollbar">
-
                 <form id="announcementForm" action="{{ route('su.ads.create') }}" data-create-url="{{ route('su.ads.create') }}" data-update-url="{{ route('su.ads.update', 'REPLACE_ID') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
                     <div id="method-spoof"></div>
                     <input type="hidden" name="_method" id="methodInput" value="PUT" disabled>
                     <input type="hidden" name="is_active" id="isActiveInput" value="{{ old('is_active', 1) }}">
-
+                    
                     {{-- Tipos --}}
-                    <div>
+                    <div style="margin-top: 0px !important;">
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Tipo de Aviso</label>
-                        <div class="grid grid-cols-4 gap-2 md:gap-3">
+                        <div class="grid grid-cols-4 gap-3">
                             <label class="cursor-pointer">
                                 <input type="radio" id="hasimgbt" name="type" value="feature" class="peer sr-only" {{ old('type', 'feature') == 'feature' ? 'checked' : '' }} onchange="updatePreview()">
-                                <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 flex items-center justify-center text-gray-400 peer-checked:text-purple-500 transition-all">
+                                <div class="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 flex items-center justify-center text-gray-400 peer-checked:text-purple-500 transition-all">
                                     <i class="fa-solid fa-image"></i>
                                 </div>
-                                <span class="block text-center text-[10px] md:text-xs mt-1 text-gray-500">Feature</span>
+                                <span class="block text-center text-xs mt-1 text-gray-500">Feature</span>
                             </label>
+
                             <label class="cursor-pointer">
-                                <input type="radio" name="type" value="update" class="peer sr-only" {{ old('type') == 'update' ? 'checked' : '' }} onchange="updatePreview()">
-                                <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 flex items-center justify-center text-gray-400 peer-checked:text-green-500 transition-all">
-                                    <i class="fas fa-sync-alt"></i>
+                                 <input type="radio" id="radio-update" name="type" value="update" class="peer sr-only" {{ old('type') == 'update' ? 'checked' : '' }} onchange="updatePreview()">
+                                <div class="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 flex items-center justify-center text-gray-400 peer-checked:text-green-500 transition-all">
+                                    <i class="fa-solid fa-arrows-rotate"></i>
                                 </div>
-                                <span class="block text-center text-[10px] md:text-xs mt-1 text-gray-500">Update</span>
+                                <span class="block text-center text-xs mt-1 text-gray-500">Update</span>
                             </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="type" value="warning" class="peer sr-only" {{ old('type') == 'warning' ? 'checked' : '' }} onchange="updatePreview()">
-                                <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 dark:peer-checked:bg-yellow-900/20 flex items-center justify-center text-gray-400 peer-checked:text-yellow-500 transition-all">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </div>
-                                <span class="block text-center text-[10px] md:text-xs mt-1 text-gray-500">Warning</span>
-                            </label>
+
                             <label class="cursor-pointer">
                                 <input type="radio" id="hasinfobt" name="type" value="info" class="peer sr-only" {{ old('type') == 'info' ? 'checked' : '' }} onchange="updatePreview()">
-                                <div class="h-10 md:h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 flex items-center justify-center text-gray-400 peer-checked:text-blue-500 transition-all">
-                                    <i class="fas fa-info-circle"></i>
+                                <div class="h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 flex items-center justify-center text-gray-400 peer-checked:text-blue-500 transition-all">
+                                    <i class="fas fa-info-circle fa-lg"></i>
                                 </div>
-                                <span class="block text-center text-[10px] md:text-xs mt-1 text-gray-500">Info</span>
+                                <span class="block text-center text-xs mt-1 text-gray-500">Info</span>
                             </label>
                         </div>
                     </div>
 
-                    {{-- Imagen (URL) --}}
-                    <div id="buttonImg" class="transition-all duration-300">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Imagen (URL)</label>
-                        <input type="text" name="image_url" value="{{ old('image_url') }}" placeholder="https://ejemplo.com/imagen.png" oninput="updatePreview()" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                    {{-- Imagen URL --}}
+                    <div id="buttonImg" class="space-y-4 transition-opacity duration-300 {{ old('type', 'feature') == 'feature' ? '' : 'hidden opacity-0' }}">
+                        <div class="pb-8 border-b border-gray-100 dark:border-gray-700">
+                            <label for="image_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Imagen Url</label>
+                            <input type="text" name="image_url" value="{{ old('image_url') }}" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://lau.app/..." oninput="updatePreview()">
+                        </div>
                     </div>
 
-                    {{-- Contenidos --}}
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Título *</label>
-                            <input type="text" id="inputTitle" name="title" value="{{ old('title') }}" oninput="updatePreview()" placeholder="Ej. Nueva actualización" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción *</label>
-                            <textarea id="inputContent" name="content" oninput="updatePreview()" rows="3" required placeholder="Detalles del anuncio..." class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none">{{ old('content') }}</textarea>
-                        </div>
+                    {{-- Textos --}}
+                    <div class="">
+                        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Título del Anuncio *</label>
+                        <input type="text" name="title" id="inputTitle" required value="{{ old('title') }}" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Ej. Mantenimiento Programado" oninput="updatePreview()">
+                    </div>
+
+                    <div>
+                        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mensaje / Descripción *</label>
+                        <textarea id="inputContent" name="content" rows="4" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none" placeholder="Escribe el detalle del aviso aquí..." oninput="updatePreview()">{{ old('content') }}</textarea>
                     </div>
 
                     {{-- Botón CTA --}}
-                    <div class="pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <label id="toggleLabel" class="flex items-center justify-between cursor-pointer group">
-                            <div>
-                                <h4 class="text-sm font-bold text-gray-900 dark:text-white">Añadir Botón de Acción</h4>
-                                <p class="text-xs text-gray-500">Permite redirigir a los usuarios a un link.</p>
-                            </div>
-                            <div class="relative">
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Botón de Acción (CTA)</span>
+                            <label id="toggleLabel" class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="hasButton" class="sr-only peer" {{ old('action_url') ? 'checked' : '' }} onchange="toggleButtonInput(); updatePreview();">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                            </div>
-                        </label>
-                        
-                        <div id="buttonConfig" class="mt-4 space-y-4 {{ old('action_url') ? '' : 'hidden opacity-0' }} transition-all duration-300">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                        <div id="buttonConfig" class="space-y-4 {{ old('action_url') ? '' : 'hidden opacity-0' }} transition-opacity duration-300">
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Texto del botón</label>
-                                <input type="text" id="inputBtnText" name="action_text" value="{{ old('action_text', 'Entendido') }}" oninput="updatePreview()" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                <label for="action_text" class="block text-xs font-medium text-gray-500 mb-1">Texto del Botón</label>
+                                <input type="text" id="inputBtnText" name="action_text" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej. Ver más detalles" value="{{ old('action_text', 'Entendido') }}" oninput="updatePreview()">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Enlace (URL)</label>
-                                <input type="text" name="action_url" value="{{ old('action_url') }}" placeholder="https://..." class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                <label for="action_url" class="block text-xs font-medium text-gray-500 mb-1">URL de Destino</label>
+                                <input type="text" name="action_url" value="{{ old('action_url') }}" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://lau.app/...">
                             </div>
                         </div>
                     </div>
 
-                    {{-- Fechas (Se hicieron obligatorias para que no falle el controller) --}}
-                    <div class="pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Inicio *</label>
-                            <input type="date" name="start_date" id="start_date" required value="{{ old('start_date') }}" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Fin *</label>
-                            <input type="date" name="end_date" id="end_date" required value="{{ old('end_date') }}" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                    {{-- Fechas --}}
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Inicio *</label>
+                                <input type="date" name="start_date" id="start_date" required value="{{ old('start_date') }}" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            </div>
+
+                            <div>
+                                <label for="end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Fin *</label>
+                                <input type="date" name="end_date" id="end_date" required value="{{ old('end_date') }}" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            </div>
                         </div>
                     </div>
                 </form>
             </div>
 
-            {{-- Columna Derecha: Vista Previa en Vivo --}}
+            {{-- Columna Derecha: Vista Previa --}}
             <div class="hidden md:flex w-1/2 lg:w-7/12 preview-bg flex-col items-center justify-center p-8 relative">
                 <div class="absolute top-6 bg-white dark:bg-gray-800 p-1 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex">
                     <button type="button" onclick="switchDevice('mobile')" id="btn-mobile" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-white"><i class="fas fa-mobile-alt mr-2"></i> Móvil</button>
                     <button type="button" onclick="switchDevice('desktop')" id="btn-desktop" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"><i class="fas fa-desktop mr-2"></i> PC</button>
                 </div>
 
-                {{-- Preview Móvil --}}
+                {{-- Mobile View --}}
                 <div id="preview-mobile" class="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-2xl flex flex-col mt-12 view-transition">
                     <div class="h-[32px] w-[3px] bg-gray-800 absolute -left-[17px] top-[72px] rounded-l-lg"></div>
                     <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
@@ -258,7 +288,7 @@
                     </div>
                 </div>
 
-                {{-- Preview Desktop --}}
+                {{-- Desktop View --}}
                 <div id="preview-desktop" class="hidden relative w-full max-w-4xl h-[500px] bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col mt-12 overflow-hidden view-transition">
                     <div class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-10 flex items-center px-4 space-x-2">
                         <div class="flex space-x-1.5"><div class="w-3 h-3 rounded-full bg-red-400"></div><div class="w-3 h-3 rounded-full bg-yellow-400"></div><div class="w-3 h-3 rounded-full bg-green-400"></div></div>
@@ -288,79 +318,98 @@
             </div>
         </div>
     </div>
+
 </div>
 
 {{-- ==========================================
      MODALES GLOBALES
      ========================================== --}}
 
-{{-- Modal para móviles: Avisa que no se puede editar en móvil --}}
+{{-- Modal Advertencia Móvil --}}
 <div id="globalBanner" class="block md:hidden fixed inset-0 z-50 flex items-end md:items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 transition-opacity duration-300">
-    <div class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl ring-1 ring-gray-900/5 transform transition-transform duration-300 ease-out">
-        <div class="flex justify-center pt-3 pb-1 md:hidden cursor-grab active:cursor-grabbing p-2">
+    <div id="modalCard" class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl ring-1 ring-gray-900/5 transform transition-transform duration-300 ease-out scale-100" style="touch-action: none;">
+        <div id="global-drag-handle" class="flex justify-center pt-3 pb-1 md:hidden cursor-grab active:cursor-grabbing p-2">
             <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
         </div>
         <div class="flex justify-center pt-4 pb-2">
             <div class="h-16 w-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center text-3xl shadow-sm animate-bounce-slow">
-                <i class="fas fa-hand"></i>
+                <i class="fas fa-hand"></i> 
             </div>
         </div>
         <div class="px-6 pb-6 text-center">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Alto 🤚</h3>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">Alto 🤚</h3>
             <div class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
-                Esta interfaz no está diseñada para móviles. Para poder crear o editar anuncios y ver la vista previa, por favor ingresa desde un ordenador.
+                Esta interfaz no está diseñada para móviles. Para poder ver la vista previa de crear un anuncio, por favor ingresa desde un ordenador.
             </div>
-            <button type="button" onclick="document.getElementById('globalBanner').classList.add('hidden')" class="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition">
-                Entendido
-            </button>
+            <div class="space-y-3"> 
+                <button type="button" onclick="closeGlobalBanner()" class="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition">
+                    Cerrar
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-{{-- Modal Cambios Sin Guardar --}}
-<div id="unsaved-modal" class="hidden fixed inset-0 z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div id="unsaved-backdrop" onclick="closeModal('unsaved')" class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity opacity-0"></div>
+{{-- Modal Salir sin Guardar --}}
+<div id="unsaved-modal" class="hidden fixed inset-0 z-50 relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="unsaved-backdrop" class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity opacity-0"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center text-center sm:items-center p-4">
-            <div id="unsaved-card" class="relative transform overflow-hidden bg-white dark:bg-gray-800 text-left shadow-2xl rounded-2xl transition-all w-full sm:max-w-lg translate-y-full sm:translate-y-0 sm:scale-95 opacity-0 sm:opacity-100">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center p-4 sm:p-4">
+            <div id="unsaved-card" class="relative transform overflow-hidden bg-white dark:bg-gray-800 text-left shadow-2xl rounded-2xl transition-all w-full sm:max-w-lg rounded-t-[2rem] sm:rounded-[1.5rem] translate-y-full sm:translate-y-0 sm:scale-95 opacity-0 sm:opacity-100" style="touch-action: none;">
+                <div id="unsaved-drag-handle" class="flex justify-center pt-3 pb-1 sm:hidden cursor-grab active:cursor-grabbing w-full">
+                    <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                </div>
                 <div class="bg-white dark:bg-gray-800 px-6 pt-5 pb-4 sm:p-8">
                     <div class="sm:flex sm:items-start">
                         <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 sm:mx-0 sm:h-10 sm:w-10">
                             <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400"></i>
                         </div>
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">¿Quieres salir sin publicar?</h3>
+                            <h3 class="text-xl font-bold leading-6 text-gray-900 dark:text-white" id="modal-title">¿Quieres salir sin publicar?</h3>
                             <div class="mt-2">
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Tienes información en el formulario. Si sales, perderás los cambios no guardados.</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Tienes información escrita en el formulario. Si sales ahora, perderás los cambios no guardados.
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 sm:flex sm:flex-row-reverse gap-2 sm:px-8">
-                    <button type="button" onclick="handleExitAction('draft')" class="w-full sm:w-auto inline-flex justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 focus:outline-none transition-transform active:scale-95">Guardar Borrador</button>
-                    <button type="button" onclick="handleExitAction('discard')" class="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-4 py-3 text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/50 focus:outline-none transition-transform active:scale-95">Descartar</button>
-                    <button type="button" onclick="closeModal('unsaved')" class="mt-3 sm:mt-0 sm:mr-auto w-full sm:w-auto inline-flex justify-center rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none">Cancelar</button>
+                    <button type="button" onclick="handleExitAction('draft')" class="w-full inline-flex justify-center rounded-xl border border-transparent bg-indigo-600 px-4 py-3 text-base font-bold text-white shadow-sm hover:bg-indigo-700 focus:outline-none sm:w-auto sm:text-sm transition-transform active:scale-95">
+                        Guardar Borrador
+                    </button>
+                    <button type="button" onclick="handleExitAction('discard')" class="mt-3 w-full inline-flex justify-center rounded-xl border border-transparent bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-4 py-3 text-base font-bold hover:bg-red-200 dark:hover:bg-red-900/50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm transition-transform active:scale-95">
+                        Descartar
+                    </button>
+                    <button type="button" onclick="closeModal('unsaved')" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-base font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm sm:mr-auto">
+                        Cancelar
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Modal Eliminar Banner --}}
-<div id="delete-modal" class="hidden fixed inset-0 z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div id="delete-backdrop" onclick="closeModal('delete')" class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity opacity-0"></div>
+{{-- Modal Eliminar --}}
+<div id="delete-modal" class="hidden fixed inset-0 z-50 relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="delete-backdrop" class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity opacity-0"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center text-center sm:items-center p-4">
-            <div id="delete-card" class="relative transform overflow-hidden bg-white dark:bg-gray-800 text-left shadow-2xl rounded-2xl transition-all w-full sm:max-w-lg translate-y-full sm:translate-y-0 sm:scale-95 opacity-0 sm:opacity-100">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center p-4 sm:p-4">
+            <div id="delete-card" class="relative transform overflow-hidden bg-white dark:bg-gray-800 text-left shadow-2xl rounded-2xl transition-all w-full sm:max-w-lg rounded-t-[2rem] sm:rounded-[1.5rem] translate-y-full sm:translate-y-0 sm:scale-95 opacity-0 sm:opacity-100" style="touch-action: none;">
+                <div id="delete-drag-handle" class="flex justify-center pt-3 pb-1 sm:hidden cursor-grab active:cursor-grabbing w-full">
+                    <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                </div>
                 <div class="bg-white dark:bg-gray-800 px-6 pt-5 pb-4 sm:p-8">
                     <div class="sm:flex sm:items-start">
                         <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10">
                             <i class="fas fa-trash text-red-600 dark:text-red-400"></i>
                         </div>
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">¿Quieres Borrar este banner?</h3>
+                            <h3 class="text-xl font-bold leading-6 text-gray-900 dark:text-white" id="modal-title">¿Quieres Borrar este banner?</h3>
                             <div class="mt-2">
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Esta acción no se podrá deshacer.</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Esta acción no se podrá deshacer.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -369,9 +418,13 @@
                     <form id="delete-form" action="" method="POST" class="w-full sm:w-auto">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent bg-red-600 text-white px-4 py-3 text-sm font-bold hover:bg-red-700 focus:outline-none transition-transform active:scale-95">Eliminar</button>
+                        <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent bg-red-600 text-white px-4 py-3 text-base font-bold hover:bg-red-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm transition-transform active:scale-95">
+                        Eliminar
+                        </button>
                     </form>
-                    <button type="button" onclick="closeModal('delete')" class="mt-3 sm:mt-0 sm:mr-auto w-full sm:w-auto inline-flex justify-center rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none">Cancelar</button>
+                    <button type="button" onclick="closeModal('delete')" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-base font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm sm:mr-auto">
+                        Cancelar
+                    </button>
                 </div>
             </div>
         </div>
@@ -396,36 +449,163 @@
         'info':    { icon: 'info-circle', color: 'blue' }
     };
 
-    // --- MANEJO DE ERRORES AL CARGAR ---
-    // Si hay errores de validación de Laravel, forzamos abrir el panel de "Crear"
-    @if($errors->any())
-        document.addEventListener("DOMContentLoaded", function() {
+    // --- CARGA INICIAL Y ANIMACIÓN ---
+    document.addEventListener("DOMContentLoaded", function() {
+        const loadingBody = document.getElementById('loading-body');
+        const bannersGrid = document.getElementById('banners-grid');
+
+        // Simulación de retraso para el loading
+        setTimeout(() => {
+            if(loadingBody) loadingBody.classList.add('hidden');
+            
+            if(bannersGrid) {
+                bannersGrid.classList.remove('hidden');
+                bannersGrid.classList.add('grid');
+                
+                bannersGrid.animate([
+                    { opacity: 0, transform: 'translateY(10px)' },
+                    { opacity: 1, transform: 'translateY(0)' }
+                ], { duration: 400, easing: 'ease-out' });
+            }
+        }, 800);
+
+        // Si hay errores, abrimos la vista de crear
+        @if($errors->any())
             toggleView('create');
-        });
-    @endif
+        @endif
+
+        // Abrir vista desde URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('view') === 'create') {
+            toggleView('create');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        updatePreview();
+    });
 
     // --- FILTROS DE BANNERS (VIÑETAS) ---
-    function filterBanners(status, btnElement) {
-        // 1. Cambiar estilo del botón activo
-        document.querySelectorAll('.banner-filter-btn').forEach(btn => {
-            btn.classList.remove('bg-indigo-600', 'text-white');
-            btn.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
-        });
-        btnElement.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
-        btnElement.classList.add('bg-indigo-600', 'text-white');
+    function filterBanners(status) {
+        const cards = document.querySelectorAll('.banner-item');
+        let visibleCount = 0;
 
-        // 2. Filtrar las tarjetas (los divs padres para el grid)
-        const items = document.querySelectorAll('.banner-item');
-        items.forEach(item => {
-            if (status === 'all') {
-                item.style.display = 'flex'; 
+        cards.forEach(card => {
+            if (status === 'all' || card.dataset.status === status) {
+                card.classList.remove('hidden');
+                visibleCount++;
             } else {
-                if (item.dataset.status === status) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+                card.classList.add('hidden');
             }
+        });
+
+        const noResultsMsg = document.getElementById('no-filter-results');
+        if(noResultsMsg) {
+            if(visibleCount === 0 && cards.length > 0) noResultsMsg.classList.remove('hidden');
+            else noResultsMsg.classList.add('hidden');
+        }
+
+        const activeClasses = ['bg-indigo-50', 'dark:bg-indigo-900/30', 'text-indigo-600', 'dark:text-indigo-400', 'border-transparent'];
+        const inactiveClasses = ['bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-200', 'border-gray-300', 'dark:border-gray-600', 'hover:bg-gray-50'];
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove(...activeClasses);
+            btn.classList.add(...inactiveClasses);
+        });
+
+        const currentBtn = document.getElementById('btn-filter-' + status);
+        if (currentBtn) {
+            currentBtn.classList.remove(...inactiveClasses);
+            currentBtn.classList.add(...activeClasses);
+        }
+    }
+
+    // --- SWIPE (ARRASTRE EN MÓVIL) ---
+    function enableSwipeDown(cardId, handleId, closeCallback) {
+        const card = document.getElementById(cardId);
+        const handle = document.getElementById(handleId);
+        
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+
+        if (!handle || !card) return;
+
+        handle.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+            isDragging = true;
+            card.style.transition = 'none';
+        }, { passive: true });
+
+        handle.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+
+            if (diff > 0) card.style.transform = `translateY(${diff}px)`;
+        }, { passive: true });
+
+        handle.addEventListener('touchend', () => {
+            isDragging = false;
+            const diff = currentY - startY;
+            
+            card.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+
+            if (diff > 100) {
+                card.style.transform = `translateY(100%)`;
+                setTimeout(() => {
+                    closeCallback(); 
+                    setTimeout(() => { card.style.transform = ''; }, 50);
+                }, 300);
+            } else {
+                card.style.transform = '';
+            }
+            startY = 0;
+            currentY = 0;
+        });
+    }
+
+    // --- SWIPE (ARRASTRE EN MÓVIL) ---
+    function enableSwipeDown(cardId, handleId, closeCallback) {
+        const card = document.getElementById(cardId);
+        const handle = document.getElementById(handleId);
+        
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+
+        if (!handle || !card) return;
+
+        handle.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+            isDragging = true;
+            card.style.transition = 'none';
+        }, { passive: true });
+
+        handle.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+
+            if (diff > 0) card.style.transform = `translateY(${diff}px)`;
+        }, { passive: true });
+
+        handle.addEventListener('touchend', () => {
+            isDragging = false;
+            const diff = currentY - startY;
+            
+            card.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+
+            if (diff > 100) {
+                card.style.transform = `translateY(100%)`;
+                setTimeout(() => {
+                    closeCallback(); 
+                    setTimeout(() => { card.style.transform = ''; }, 50);
+                }, 300);
+            } else {
+                card.style.transform = '';
+            }
+            startY = 0;
+            currentY = 0;
         });
     }
 
@@ -435,6 +615,7 @@
         const backdrop = document.getElementById(`${idName}-backdrop`);
         const card = document.getElementById(`${idName}-card`);
         if (!modal || !backdrop || !card) return;
+        
         modal.classList.remove('hidden');
         setTimeout(() => {
             backdrop.classList.remove('opacity-0');
@@ -448,6 +629,7 @@
         const backdrop = document.getElementById(`${idName}-backdrop`);
         const card = document.getElementById(`${idName}-card`);
         if (!modal || !backdrop || !card) return;
+        
         backdrop.classList.add('opacity-0');
         card.classList.add('translate-y-full', 'opacity-0', 'sm:scale-95');
         card.classList.remove('sm:scale-100');
@@ -462,7 +644,25 @@
         openModal('delete');
     }
 
-    // --- NAVEGACIÓN ENTRE VISTAS ---
+    // Activar swipe para modales
+    const globalBanner = document.getElementById('globalBanner');
+    const globalCard = document.getElementById('modalCard'); 
+
+    function closeGlobalBanner() {
+        globalBanner.classList.add('opacity-0');
+        globalCard.classList.add('translate-y-full');
+        setTimeout(() => {
+            globalBanner.classList.add('hidden');
+            globalCard.style.transform = ''; 
+        }, 1000);
+    }
+
+    // Vinculamos la función Swipe a cada modal
+    enableSwipeDown('modalCard', 'global-drag-handle', closeGlobalBanner);
+    enableSwipeDown('unsaved-card', 'unsaved-drag-handle', () => closeModal('unsaved'));
+    enableSwipeDown('delete-card', 'delete-drag-handle', () => closeModal('delete'));
+
+    // --- NAVEGACIÓN Y FORMULARIO ---
     function toggleView(viewName) {
         const viewIndex = document.getElementById('view-index');
         const viewCreate = document.getElementById('view-create');
@@ -487,12 +687,11 @@
         currentBannerId = banner.id;
         document.getElementById('formTitle').innerText = "Editar Anuncio";
         
-        // Forma segura de construir la URL usando el Data Attribute
         let updateUrl = form.dataset.updateUrl.replace('REPLACE_ID', banner.id);
         form.action = updateUrl; 
         
         const methodInput = document.getElementById('methodInput');
-        if (methodInput) methodInput.disabled = false; // Modo PUT
+        if (methodInput) methodInput.disabled = false;
         
         inputTitle.value = banner.title || '';
         inputContent.value = banner.content || '';
@@ -539,11 +738,10 @@
         if (form.dataset.createUrl) form.action = form.dataset.createUrl;
         
         const methodInput = document.getElementById('methodInput');
-        if (methodInput) methodInput.disabled = true; // Modo POST
+        if (methodInput) methodInput.disabled = true;
         
         document.getElementById('isActiveInput').value = "1";
         document.getElementById('hasimgbt').checked = true;
-        
         document.getElementById('buttonConfig').classList.add('hidden', 'opacity-0');
         document.getElementById('hasButton').checked = false;
         
@@ -595,7 +793,7 @@
         const btnVal = inputBtnText.value || 'Entendido';
         
         const selectedRadio = document.querySelector('input[name="type"]:checked');
-        const selectedType = selectedRadio ? selectedRadio.value : 'info'; // Fallback a info
+        const selectedType = selectedRadio ? selectedRadio.value : 'info';
         const config = types[selectedType];
         
         let colorClasses = '';
@@ -692,15 +890,5 @@
             label.textContent = "Vista previa escritorio";
         }
     }
-
-    // Inicializar
-    document.addEventListener("DOMContentLoaded", function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('view') === 'create') {
-            toggleView('create');
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-        updatePreview();
-    });
 </script>
 @endsection

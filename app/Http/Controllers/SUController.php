@@ -196,8 +196,9 @@ class SUController extends Controller
 
     public function ads()
     {
-        $banners = Banner::latest()->get(); // Asegúrate de enviarlos a la vista
-        return view('su.anuncio', compact('banners'));
+        $banners = Banner::latest()->get();
+        $activeCount = $banners->where('is_active', true)->count();
+        return view('su.anuncio', compact('banners', 'activeCount'));
     }
 
     public function create(Request $request)

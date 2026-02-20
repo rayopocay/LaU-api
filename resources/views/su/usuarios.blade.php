@@ -36,6 +36,7 @@
             </div>
             
             <div id="users-list-container" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                
                 {{-- Llamada al componente dinámico --}}
                 
                 @include('components.listar-perfiles-su', ['users' => $users])
@@ -508,6 +509,34 @@
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('search-input');
         const resultsContainer = document.getElementById('users-list-container');
+
+        // --- TRIGGER DE CARGA INICIAL ---
+        const activeDetailDiv = document.querySelector('.user-detail:not(.hidden)');
+        if (activeDetailDiv) {
+            const activeUserId = activeDetailDiv.id.replace('detail-', '');
+            
+            const loadingBody = document.getElementById('loading-body-' + activeUserId);
+            const contentBody = document.getElementById('content-body-' + activeUserId);
+            const actionButtons = document.getElementById('actions-' + activeUserId);
+
+            if(loadingBody && contentBody) {
+                // Mostrar "Cargando..."
+                loadingBody.classList.remove('hidden');
+                contentBody.classList.add('hidden');
+                if(actionButtons) actionButtons.classList.add('hidden');
+
+                // Quitar el "Cargando..." y poner el "Fade-In"
+                setTimeout(() => {
+                    loadingBody.classList.add('hidden');
+                    contentBody.classList.remove('hidden');
+                    contentBody.classList.add('fade-in');
+                    if(actionButtons) {
+                        actionButtons.classList.remove('hidden');
+                        actionButtons.classList.add('fade-in');
+                    }
+                }, 600);
+            }
+        }
 
         if (searchInput && resultsContainer) {
             const urlDestino = searchInput.dataset.url;

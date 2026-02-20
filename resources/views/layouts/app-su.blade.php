@@ -12,13 +12,9 @@
         }
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+    @stack('styles')
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <title>Lau - @yield('title', 'Panel')</title>
+    <title>Lau -- @yield('title', 'Panel')</title>
     @vite(['resources/js/script-lau.js'])
 
     <script>
@@ -31,53 +27,172 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @livewireStyles()
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px; /* Ancho delgado y elegante */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent; /* Fondo transparente */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1; /* gris claro (slate-300) */
+            border-radius: 20px;       /* bordes redondeados */
+        }
+
+        /* Estilos para Modo Oscuro (si tu HTML tiene class="dark") */
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #4b5563; /* gris oscuro (gray-600) */
+        }
+
+        /* Hover: cuando pasas el mouse sobre la barra */
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #6366f1; /* indigo-500 (Tu color de acento) */
+        }
+
+        /* Estilos para Firefox */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .dark .custom-scrollbar {
+            scrollbar-color: #4b5563 transparent;
+        }
+        
+        .preview-bg {
+            background-color: #f3f4f6;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .dark .preview-bg {
+            background-color: #111827;
+            background-image: radial-gradient(#374151 1px, transparent 1px);
+        }
+        
+        /* Animaciones de transición */
+        .view-transition { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 1. MODO CLARO: Fondo Blanco y Texto Gris Oscuro */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px white inset !important; /* Tapa el fondo amarillo con blanco */
+            -webkit-text-fill-color: #111827 !important; /* Color del texto (gray-900) */
+            transition: background-color 5000s ease-in-out 0s; /* Evita parpadeos */
+        }
+
+        /* 2. MODO OSCURO: Fondo Gris Oscuro y Texto Blanco */
+        .dark input:-webkit-autofill,
+        .dark input:-webkit-autofill:hover, 
+        .dark input:-webkit-autofill:focus, 
+        .dark input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important; /* Tapa con gris oscuro (gray-800) */
+            -webkit-text-fill-color: #ffffff !important; /* Texto blanco */
+            caret-color: white; /* Color del cursor parpadeante */
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+            animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Animación de Salida (Nueva) */
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .animate-slide-out-right {
+            animation: slideOutRight 0.4s ease-in forwards;
+        }
     </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
 
+    <!-- Alertas -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
-
-        <div class="toast-alert pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-green-500 rounded-xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-300 flex items-start p-4 animate-slide-in-right">
-            <div class="flex-shrink-0">
-                <div class="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
-                    <i class="fas fa-check-circle"></i>
+        {{-- Alerta de exito --}}
+        @if (session('success'))
+            <div id="toast-success" class="toast-alert pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-green-500 rounded-xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-300 flex items-start p-4 animate-slide-in-right">
+                <div class="flex-shrink-0">
+                    <div class="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">¡Éxito!</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ session('success') }}</p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button onclick="closeToast(this.closest('.toast-alert'))" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
-            <div class="ml-3 w-0 flex-1 pt-0.5">
-                <p class="text-sm font-bold text-gray-900 dark:text-white">¡Éxito!</p>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">La operación se completó correctamente.</p>
-            </div>
-            <div class="ml-4 flex-shrink-0 flex">
-                <button onclick="closeToast(this.closest('.toast-alert'))" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="toast-alert pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-red-500 rounded-xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-300 flex items-start p-4 animate-slide-in-right">
-            <div class="flex-shrink-0">
-                <div class="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
-                    <i class="fas fa-exclamation-circle"></i>
+        @endif
+        {{-- Alerta de validación --}}
+        @if ($errors->any())
+            <div class="toast-alert pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-yellow-500 rounded-xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-300 flex items-start p-4 animate-slide-in-right">
+                <div class="flex-shrink-0">
+                    <div class="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-500">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">¡Aviso!</p>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <ul class="list-disc pl-4">
+                            {{-- Listamos todos los errores de validación --}}
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button onclick="closeToast(this.closest('.toast-alert'))" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
-            <div class="ml-3 w-0 flex-1 pt-0.5">
-                <p class="text-sm font-bold text-gray-900 dark:text-white">Error</p>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Hubo un problema al guardar los datos.</p>
+        @endif
+        {{-- Alerta de error --}}
+        @if (session('error'))
+            <div id="toast-error" class="toast-alert pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-red-500 rounded-xl shadow-2xl overflow-hidden transform transition-all hover:scale-105 duration-300 flex items-start p-4 animate-slide-in-right">
+                <div class="flex-shrink-0">
+                    <div class="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white">Error</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ session('error') }}</p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button onclick="closeToast(this.closest('.toast-alert'))" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
-            <div class="ml-4 flex-shrink-0 flex">
-                <button onclick="closeToast(this.closest('.toast-alert'))" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
+        @endif
 
     </div>
+    <!-- fin alerta -->
 
     <div class="flex h-screen overflow-hidden relative">
 
