@@ -74,7 +74,6 @@ class AuthController extends Controller
 
     public function socialLogin(Request $request)
     {
-        // 1. Agregamos los campos del formulario como opcionales
         $request->validate([
             'provider' => 'required|in:google,microsoft',
             'token' => 'required|string',
@@ -89,7 +88,7 @@ class AuthController extends Controller
         $socialUser = null;
 
         try {
-            // --- LA MISMA LÓGICA DE VALIDACIÓN DE GOOGLE/MICROSOFT AQUÍ ---
+            // Validación de Google/Microsoft
             if ($provider === 'google') {
                 $response = Http::withToken($token)->get('https://www.googleapis.com/oauth2/v3/userinfo');
                 if ($response->failed()) return response()->json(['success' => false, 'message' => 'Token de Google inválido'], 401);
@@ -102,26 +101,47 @@ class AuthController extends Controller
                 $socialUser = (object)['email' => $data['mail'] ?? $data['userPrincipalName'], 'name' => $data['displayName'], 'avatar' => null];
             }
 
-            // 2. BUSCAR AL USUARIO
+            // DETECTAR UNIVERSIDAD POR DOMINIO 
+            $email = $socialUser->email;
+            $emailParts = explode('@', $email);
+            $universidad = null;
+
+            if (count($emailParts) === 2) {
+                $domain = $emailParts[1]; // ues.edu.sv, utec.edu.sv
+                $universidad = \App\Models\Universidad::where('dominio', $domain)->first();
+            }
+
             $user = User::where('email', $socialUser->email)->first();
 
             if (!$user) {
                 // SI ES NUEVO Y NO MANDÓ LOS DATOS EXTRA -> Detenemos y pedimos registro
                 if (!$request->filled('username')) {
-                    return response()->json([
+                    $response = [
                         'success' => true,
-                        'requires_registration' => true, // <-- BANDERA CLAVE
+                        'requires_registration' => true,
                         'data' => [
                             'name' => $socialUser->name,
                             'email' => $socialUser->email
                         ],
                         'message' => 'Faltan datos para completar el registro.'
-                    ]);
+                    ];
+
+                    // ========== AGREGAR UNIVERSIDAD DETECTADA A LA RESPUESTA ==========
+                    if ($universidad) {
+                        $response['universidad'] = [
+                            'id' => $universidad->id,
+                            'nombre' => $universidad->nombre,
+                            'dominio' => $universidad->dominio
+                        ];
+                    }
+                    // ==================================================================
+
+                    return response()->json($response);
                 }
 
-                // SI ES NUEVO Y SÍ MANDÓ LOS DATOS EXTRA (Viene de dar clic en "Confirmar Datos") -> Lo creamos
+                // SI ES NUEVO Y SÍ MANDÓ LOS DATOS EXTRA -> Lo creamos
                 $user = User::create([
-                    'name' => $request->name ?? $socialUser->name, // Tomamos el que haya editado o el de Google
+                    'name' => $request->name ?? $socialUser->name,
                     'email' => $socialUser->email,
                     'username' => $request->username,
                     'password' => Hash::make(Str::random(24)),
@@ -130,7 +150,7 @@ class AuthController extends Controller
                 ]);
             }
 
-            // 3. GENERAR TOKEN DE SESIÓN (LOGIN O REGISTRO FINALIZADO)
+            // Generar token de sesión
             $token = $user->createToken('mobile-app')->plainTextToken;
 
             return response()->json([
