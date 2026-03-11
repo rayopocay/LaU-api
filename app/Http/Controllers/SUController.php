@@ -331,4 +331,29 @@ class SUController extends Controller
         // 3. Redirigir
         return back()->with('success', 'Insignia creada correctamente');
     }
+
+    public function destroy(Request $request, $id)
+    {
+        // 1. Validar que el campo de contraseña venga en el formulario
+        $request->validate([
+            'password_verific_modify' => 'required|string',
+        ], [
+            'password_verific_modify.required' => 'Debes ingresar tu contraseña para confirmar.'
+        ]);
+
+        // 2. Verificar que la contraseña del Admin (quien está logueado) sea correcta
+        $admin = auth()->user(); // Obtiene el admin actual
+
+        if (!Hash::check($request->password_verific_modify, $admin->password_verific_modify)) {
+            // Si la contraseña no coincide, regresa atrás con un error
+            return back()->withErrors(['password_verific_modify' => 'La contraseña de administrador es incorrecta.']);
+        }
+
+        // 3. Si la contraseña es correcta, buscar al usuario y eliminarlo
+        $usuarioAEliminar = User::findOrFail($id);
+        $usuarioAEliminar->delete();
+
+        // 4. Redirigir con mensaje de éxito
+        return redirect()->back()->with('success', 'Usuario eliminado permanentemente.');
+    }
 }
