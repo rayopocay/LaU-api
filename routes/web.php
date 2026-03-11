@@ -313,6 +313,8 @@ Route::middleware(['auth:super'])
         Route::get('/buscar-usuarios', [SUController::class, 'buscarUsuarios'])->name('user.buscar');
         Route::get('/info/{user:username}', [SUController::class, 'info'])->name('info');
 
+        Route::delete('/usuarios/{id}', [SUController::class, 'destroy'])->name('user.destroy');
+
         // Gestión de Insignias
         Route::get('/insignias', [SUController::class, 'insig'])->name('insig');
         Route::post('/insignias/create', [SUController::class, 'storeinsig'])->name('insig.create');
