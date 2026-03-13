@@ -12,6 +12,10 @@
             <h2 class="text-xl md:text-2xl font-bold text-gray-700 dark:text-white truncate">Carreras</h2>
         </div>
         <div>
+            <button onclick="toggleModal('list-careers-modal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-medium shadow transition whitespace-nowrap">
+                <i class="fa-solid fa-clipboard-list"></i> <span class="hidden md:inline">Ver Carrera (listado)</span><span class="md:hidden">Listado</span>
+            </button>
+
             <button onclick="toggleModal('create-career-modal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 md:px-4 py-2 rounded-lg text-sm font-medium shadow transition whitespace-nowrap">
                 <i class="fas fa-plus mr-1"></i> <span class="hidden md:inline">Nueva Carrera (Catálogo)</span><span class="md:hidden">Nueva</span>
             </button>
@@ -107,7 +111,7 @@
                                 <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
                                     <div class="text-xs text-gray-400">{{ $carrera->users_count ?? 0 }} estudiantes</div>
                                     <button class="text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors">
-                                        <i class="fas fa-edit"></i>
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -170,10 +174,21 @@
                     <div class="space-y-4">
                         <input type="hidden" name="universidad_id" id="hidden_assign_uni_id" value="">
                         
-                        <div>
+                        <!-- <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Selecciona la Carrera del Catálogo</label>
                             <select name="carrera_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 border" required>
                                 <option value="" disabled selected>Elige una carrera...</option>
+                                @foreach($todasLasCarreras as $catCarrera)
+                                    <option value="{{ $catCarrera->id }}">{{ $catCarrera->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div> -->
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Selecciona la Carrera del Catálogo</label>
+                            
+                            <select id="select-carrera" name="carrera_id" placeholder="Busca o elige una carrera..." autocomplete="off" required>
+                                <option value="">Busca o elige una carrera...</option>
                                 @foreach($todasLasCarreras as $catCarrera)
                                     <option value="{{ $catCarrera->id }}">{{ $catCarrera->nombre }}</option>
                                 @endforeach
@@ -186,6 +201,54 @@
                     <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="toggleModal('assign-career-modal')">Cancelar</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div id="list-careers-modal" class="hidden fixed inset-0 z-50 overflow-y-auto backdrop-blur-sm transition-opacity duration-300">
+    <div class="flex items-center justify-center min-h-screen py-4 px-4 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75" onclick="toggleModal('list-careers-modal')"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-[1.5rem] text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            
+            <div class="bg-white dark:bg-gray-800 px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                    <div class="h-8 w-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    Catálogo de Carreras
+                </h3>
+                <button onclick="toggleModal('list-careers-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+            
+            <div class="px-6 py-4 max-h-96 overflow-y-auto custom-scrollbar bg-gray-50/50 dark:bg-gray-800/50">
+                <div class="space-y-2">
+                    @forelse($todasLasCarreras as $catCarrera)
+                        <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors group">
+                            <div class="flex items-center">
+                                <i class="fas fa-graduation-cap text-gray-400 group-hover:text-indigo-500 mr-3 transition-colors"></i>
+                                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $catCarrera->nombre }}</span>
+                            </div>
+                            <span class="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">ID: {{ $catCarrera->id }}</span>
+                        </div>
+                    @empty
+                        <div class="text-center py-8">
+                            <i class="fas fa-box-open fa-3x text-gray-300 dark:text-gray-600 mb-3"></i>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">El catálogo está vacío.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+                <button type="button" class="inline-flex justify-center rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm px-6 py-2 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" onclick="toggleModal('list-careers-modal')">
+                    Cerrar
+                </button>
+            </div>
+            
         </div>
     </div>
 </div>
@@ -237,7 +300,7 @@
                     </button>
                 </div>
             </form>
-            </div>
+        </div>
     </div>
 </div>
 
@@ -318,6 +381,84 @@
             backdrop.classList.add('hidden');
         }
     }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        new TomSelect("#select-carrera", {
+            create: false, // false para que el usuario no pueda inventar carreras que no existen
+            sortField: {
+                field: "text",
+                direction: "asc" // Ordena alfabéticamente la lista
+            },
+            placeholder: "Busca o elige una carrera...",
+            dropdownParent: 'body'
+        });
+    });
 </script>
+
+<style>
+    .ts-dropdown .ts-dropdown-content {
+        max-height: 350px !important; /* Puedes subir este número si quieres que sea aún más larga */
+    }
+    /* 1. MODO CLARO (Por defecto) */
+    .ts-wrapper .ts-control {
+        border-color: #d1d5db !important; /* border-gray-300 */
+        border-radius: 0.375rem !important; /* rounded-md */
+        padding: 0.5rem 0.75rem !important; /* py-2 px-3 */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
+        background-color: #ffffff !important; /* bg-white */
+        color: #374151 !important; /* text-gray-700 */
+        font-size: 0.875rem !important; /* text-sm */
+    }
+
+    /* Estado Focus (Cuando haces clic) */
+    .ts-wrapper.focus .ts-control {
+        border-color: #6366f1 !important; /* border-indigo-500 */
+        box-shadow: 0 0 0 1px #6366f1 !important; /* ring-indigo-500 */
+    }
+
+    /* Menú Desplegable */
+    .ts-dropdown {
+        z-index: 99999 !important;
+        border-color: #d1d5db !important;
+        border-radius: 0.375rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        background-color: #ffffff !important;
+        color: #374151 !important;
+        font-size: 0.875rem !important;
+    }
+
+    /* Opciones al pasar el mouse */
+    .ts-dropdown .option:hover, 
+    .ts-dropdown .active {
+        background-color: #e0e7ff !important; /* bg-indigo-100 */
+        color: #4f46e5 !important; /* text-indigo-600 */
+    }
+
+    /* 2. MODO OSCURO (Cuando el <html> o <body> tiene la clase .dark) */
+    .dark .ts-wrapper .ts-control {
+        border-color: #4b5563 !important; /* dark:border-gray-600 */
+        background-color: #374151 !important; /* dark:bg-gray-700 */
+        color: #f3f4f6 !important; /* dark:text-gray-100 */
+    }
+    
+    /* Color del texto que el usuario escribe en modo oscuro */
+    .dark .ts-wrapper .ts-control > input {
+        color: #ffffff !important; 
+    }
+
+    /* Menú desplegable en modo oscuro */
+    .dark .ts-dropdown {
+        border-color: #4b5563 !important;
+        background-color: #374151 !important;
+        color: #e5e7eb !important;
+    }
+
+    /* Opciones al pasar el mouse en modo oscuro */
+    .dark .ts-dropdown .option:hover, 
+    .dark .ts-dropdown .active {
+        background-color: #1f2937 !important; /* dark:bg-gray-800 */
+        color: #818cf8 !important; /* dark:text-indigo-400 */
+    }
+</style>
 
 @endsection

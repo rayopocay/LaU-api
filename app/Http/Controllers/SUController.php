@@ -98,6 +98,39 @@ class SUController extends Controller
         return redirect()->back()->with('success', 'Universidad agregada correctamente.');
     }
 
+    public function updateUni(Request $request, $id)
+    {
+        // 1. Buscamos la universidad en la base de datos
+        $universidad = Universidad::findOrFail($id);
+
+        // 2. Validamos los datos entrantes
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'siglas' => 'nullable|string|max:20',
+            'color_primario' => 'nullable|string|max:7',
+            /*
+             * LA REGLA DEL DOMINIO:
+             * unique:universidades,dominio,' . $id
+             * Esto significa: "Asegúrate de que el dominio sea único en la tabla universidades, 
+             * EXCEPTO si pertenece a la universidad con este $id (la que estoy editando)".
+             */
+            'dominio' => 'required|string|max:255|unique:universidades,dominio,' . $id,
+        ], [
+            'dominio.unique' => 'Ya existe otra universidad registrada con este dominio.'
+        ]);
+
+        // 3. Actualizamos los datos
+        $universidad->update([
+            'nombre' => $request->nombre,
+            'siglas' => $request->siglas,
+            'dominio' => $request->dominio,
+            'color_primario' => $request->color_primario,
+        ]);
+
+        // 4. Redirigimos con mensaje de éxito
+        return redirect()->back()->with('success', 'Universidad actualizada correctamente.');
+    }
+
     public function carrera(Request $request)
     {
         // Traemos todas las universidades con sus carreras

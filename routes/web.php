@@ -308,6 +308,7 @@ Route::middleware(['auth:super'])
 
         Route::get('/universidades', [SUController::class, 'universidad'])->name('uni');
         Route::post('/universidades', [SUController::class, 'storeuni'])->name('uni.store');
+        Route::put('/universidades/{id}', [SUController::class, 'updateUni'])->name('uni.update');
 
         Route::get('/carreras', [SUController::class, 'carrera'])->name('uni.ca');
         // Ruta para crear la carrera en el catálogo (Botón Superior)
