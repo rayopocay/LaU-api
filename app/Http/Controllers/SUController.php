@@ -7,6 +7,7 @@ use App\Models\su_ad;
 use App\Models\User;
 use App\Models\Banner;
 use App\Models\Insignia;
+use App\Models\Reporte;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,12 +15,12 @@ use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 
 class SUController extends Controller
-{   
+{
     use ValidatesRequests;
 
     public function login()
     {
-      return view('su.login');   
+        return view('su.login');
     }
 
     public function storelau(Request $request)
@@ -43,10 +44,10 @@ class SUController extends Controller
     public function storeus()
     {
         if (Auth::guard('super')->check()) {
-            Auth::guard('super')->logout(); 
+            Auth::guard('super')->logout();
         }
 
-        return redirect()->route('su.us.laulogin'); 
+        return redirect()->route('su.us.laulogin');
     }
 
     public function dashboard()
@@ -54,11 +55,13 @@ class SUController extends Controller
         $users = \App\Models\User::latest()->get();
         $totalUsers = $users->count();
         $activeCount = Banner::where('is_active', true)->count();
-        
+        $reportesPendientes = Reporte::where('estado', 'pendiente')->count();
+
         return view('su.dashboard', [
             'users' => $users,
             'totalUsers' => $totalUsers,
             'activeCount' => $activeCount,
+            'reportesPendientes' => $reportesPendientes,
         ]);
     }
 
@@ -73,18 +76,18 @@ class SUController extends Controller
     }
 
     // --- NUEVAS FUNCIONES DE USUARIOS ---
-    
+
     public function userperfil(User $user)
     {
         $insignia = Insignia::latest()->get();
         $authUser = Auth::user();
-        $users = \App\Models\User::with(['universidad', 'carrera'])
-                ->withCount(['posts', 'followers'])
-                ->latest()
-                ->get();
+        $users = User::with(['universidad', 'carrera', 'insignias'])
+            ->withCount(['posts', 'followers', 'reportesRecibidos'])
+            ->latest()
+            ->get();
 
         $totalUsers = $users->count();
-        
+
         return view('su.usuarios', [
             'users' => $users,
             'authUser' => $authUser,
@@ -96,12 +99,21 @@ class SUController extends Controller
     public function buscarUsuarios(Request $request)
     {
         $query = $request->input('buscar');
-        $users = User::when($query, function($q) use ($query) {
+        $users = User::when($query, function ($q) use ($query) {
             $q->where('name', 'like', "%{$query}%")
-              ->orWhere('username', 'like', "%{$query}%");
+                ->orWhere('username', 'like', "%{$query}%");
         })->get();
 
         return view('components.listar-perfiles-su', compact('users'));
+    }
+
+    public function reportes()
+    {
+        $reportes = Reporte::with(['reporter', 'reportedUser'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        return view('su.reportes', compact('reportes'));
     }
 
     // ------------------------------------
@@ -197,8 +209,8 @@ class SUController extends Controller
     public function ads()
     {
         $banners = Banner::with('viewedByUsers')
-                 ->latest()
-                 ->get();
+            ->latest()
+            ->get();
         $activeCount = $banners->where('is_active', true)->count();
         return view('su.anuncio', compact('banners', 'activeCount'));
     }
@@ -206,7 +218,7 @@ class SUController extends Controller
     public function resetViews($id)
     {
         $banner = Banner::findOrFail($id);
-        
+
         // El método detach() sin argumentos elimina TODAS las relaciones en la tabla pivote para este modelo
         $banner->viewedByUsers()->detach();
 
@@ -290,7 +302,7 @@ class SUController extends Controller
             ->with('success', '¡El anuncio se ha actualizado correctamente!');
     }
 
-    public function delete($id) 
+    public function delete($id)
     {
         $banner = Banner::findOrFail($id);
         $banner->delete();
@@ -300,12 +312,12 @@ class SUController extends Controller
 
     // ------------------------------------
 
-    public function insig() 
+    public function insig()
     {
-        $insignias = Insignia::withCount('users') 
-                        ->latest()
-                        ->get();
-                        
+        $insignias = Insignia::withCount('users')
+            ->latest()
+            ->get();
+
         return view('su.insignia', compact('insignias'));
     }
 
@@ -316,7 +328,7 @@ class SUController extends Controller
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:500',
             'icono' => 'required|string',
-            'bgicon' => 'required|string', 
+            'bgicon' => 'required|string',
         ]);
 
         // 2. Crear
