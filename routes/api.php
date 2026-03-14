@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PostController;
@@ -14,6 +13,7 @@ use App\Http\Controllers\Api\FollowerController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\PomodoroController;
 use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\ReporteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -108,6 +108,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Push Notifications - Registro de tokens de dispositivo
     Route::post('/notifications/register-device', [NotificationController::class, 'registerDevice']); // Registrar token FCM
     Route::post('/notifications/unregister-device', [NotificationController::class, 'unregisterDevice']); // Desregistrar token FCM
+
+    // Reportes de usuarios
+    Route::post('/reportes', [ReporteController::class, 'store']);
 
     // ========== CHAT ROUTES ==========
     Route::get('/chat/contacts', [App\Http\Controllers\Api\ChatApiController::class, 'getContactsJSON']);
