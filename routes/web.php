@@ -214,11 +214,11 @@ Route::post('/archivos', [ImagenController::class, 'storeArchivo'])->name('archi
  */
 Route::get('/archivos/{filename}', function ($filename) {
     $filePath = storage_path('app/public/archivos/' . $filename);
-    
+
     if (!file_exists($filePath)) {
         abort(404, 'Archivo no encontrado');
     }
-    
+
     return response()->download($filePath);
 })->name('archivos.download');
 
@@ -228,13 +228,13 @@ Route::get('/archivos/{filename}', function ($filename) {
  */
 Route::get('/archivos/preview/{filename}', function ($filename) {
     $filePath = storage_path('app/public/archivos/' . $filename);
-    
+
     if (!file_exists($filePath)) {
         abort(404, 'Archivo no encontrado');
     }
-    
+
     $mimeType = mime_content_type($filePath);
-    
+
     return response()->file($filePath, [
         'Content-Type' => $mimeType,
         'Content-Disposition' => 'inline; filename="' . $filename . '"'
@@ -302,7 +302,7 @@ Route::middleware(['auth:super'])
     ->prefix('us/su/lau')
     ->as('su.')
     ->group(function () {
-        
+
         // Vistas Generales
         Route::get('/dashboard', [SUController::class, 'dashboard'])->name('dash');
 
@@ -322,6 +322,7 @@ Route::middleware(['auth:super'])
         Route::get('/usuarios', [SUController::class, 'userperfil'])->name('usuarios');
         Route::get('/buscar-usuarios', [SUController::class, 'buscarUsuarios'])->name('user.buscar');
         Route::get('/info/{user:username}', [SUController::class, 'info'])->name('info');
+        Route::get('/reportes', [SUController::class, 'reportes'])->name('reportes');
 
         Route::delete('/usuarios/{id}', [SUController::class, 'destroy'])->name('user.destroy');
 
@@ -339,7 +340,6 @@ Route::middleware(['auth:super'])
         Route::delete('/ads/{id}', [SUController::class, 'delete'])->name('ads.delete');
 
         Route::post('/ads/{id}/reset-views', [SUController::class, 'resetViews'])->name('ads.resetviews');
-        
     });
 
 

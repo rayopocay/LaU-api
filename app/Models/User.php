@@ -250,4 +250,10 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Insignia::class)->withTimestamps();
     }
+
+    // Relación para obtener los reportes que ha RECIBIDO este usuario
+    public function reportesRecibidos()
+    {
+        return $this->hasMany(Reporte::class, 'reported_user_id');
+    }
 }
