@@ -38,6 +38,7 @@ Route::get('/carreras', [UniversidadController::class, 'getAllCarreras']);
 // Posts públicos (solo lectura)
 Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{post}', [PostController::class, 'show']);
+Route::post('/posts/filter', [PostController::class, 'filtropost']);
 Route::get('/posts/user/{userId}', [PostController::class, 'userPosts']);
 
 // Búsqueda de música iTunes (público)
