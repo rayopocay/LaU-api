@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Carrera;
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+
+use function PHPUnit\Framework\isEmpty;
 
 /**
  * Controlador de Posts para la API de LaU app
@@ -24,6 +28,85 @@ class PostController extends Controller
                 ->withCount(['comentarios', 'likes'])
                 ->latest()
                 ->paginate(20);
+
+            $posts->getCollection()->transform(function ($post) {
+                if ($post->imagen) {
+                    $post->imagen_url = url('uploads/' . $post->imagen);
+                }
+                if ($post->archivo) {
+                    $post->archivo_url = url('files/' . $post->archivo);
+                }
+                if ($post->user && $post->user->imagen) {
+                    $post->user->imagen_url = url('perfiles/' . $post->user->imagen);
+                }
+                // Nota: En el feed mantenemos la carga simple para rendimiento.
+                // Si necesitas anidamiento en el feed, habría que aplicar la lógica de show() aquí también.
+                if ($post->comentarios) {
+                    $post->comentarios->transform(function ($comentario) {
+                        if ($comentario->user && $comentario->user->imagen) {
+                            $comentario->user->imagen_url = url('perfiles/' . $comentario->user->imagen);
+                        }
+                        return $comentario;
+                    });
+                }
+                if ($post->likes) {
+                    $post->likes->transform(function ($like) {
+                        if ($like->user && $like->user->imagen) {
+                            $like->user->imagen_url = url('perfiles/' . $like->user->imagen);
+                        }
+                        return $like;
+                    });
+                }
+                return $post;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $posts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener posts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function filtropost(Request $request){
+        $universidad = $request->universidad;
+        $carrera = $request->carrera;
+
+        try {
+            if(isEmpty($carrera)){
+                $posts = Post::with(['user', 'comentarios.user', 'likes'])
+                ->withCount(['comentarios', 'likes'])
+                ->whereHas('user', function ($query) use ($universidad, $carrera) {
+                    $query->where('universidad_id', $universidad);
+                })
+                ->latest()
+                ->paginate(20);
+            }
+            
+            if(isEmpty($universidad)){
+                $posts = Post::with(['user', 'comentarios.user', 'likes'])
+                ->withCount(['comentarios', 'likes'])
+                ->whereHas('user', function ($query) use ($universidad, $carrera) {
+                    $query->where('carrera_id', $carrera);
+                })
+                ->latest()
+                ->paginate(20);
+            }
+
+            $posts = Post::with(['user', 'comentarios.user', 'likes'])
+                ->withCount(['comentarios', 'likes'])
+                ->whereHas('user', function ($query) use ($universidad, $carrera) {
+                    $query->where('universidad_id', $universidad)
+                        ->where('carrera_id', $carrera);
+                })
+                ->latest()
+                ->paginate(20);
+
 
             $posts->getCollection()->transform(function ($post) {
                 if ($post->imagen) {
